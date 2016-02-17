@@ -43,6 +43,11 @@ module Servant.Server
   , NamedConfig(..)
   , descendIntoNamedConfig
 
+  -- * General Authentication
+  , AuthHandler(unAuthHandler)
+  , AuthServerType
+  , mkAuthHandler
+
     -- * Default error type
   , ServantErr(..)
     -- ** 3XX
@@ -117,7 +122,7 @@ serve :: (HasServer layout config)
     => Proxy layout -> Config config -> Server layout -> Application
 serve p config server = toApplication (runRouter (route p config d))
   where
-    d = Delayed r r r (\ _ _ -> Route server)
+    d = Delayed r r r r (\ _ _ _ -> Route server)
     r = return (Route ())
 
 
