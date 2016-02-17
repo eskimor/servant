@@ -45,7 +45,7 @@ module Servant.Server
 
   -- * General Authentication
   , AuthHandler(unAuthHandler)
-  , AuthServerType
+  , AuthServerData
   , mkAuthHandler
 
     -- * Default error type

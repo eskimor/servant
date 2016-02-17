@@ -465,12 +465,12 @@ ct_wildcard = "*" <> "/" <> "*" -- Because CPP
 -- * General Authentication
 
 instance ( HasServer api config
-         , HasConfigEntry config (AuthHandler Request (AuthServerType (AuthProtect tag)))
+         , HasConfigEntry config (AuthHandler Request (AuthServerData (AuthProtect tag)))
          )
   => HasServer (AuthProtect tag :> api) config where
 
   type ServerT (AuthProtect tag :> api) m =
-    AuthServerType (AuthProtect tag) -> ServerT api m
+    AuthServerData (AuthProtect tag) -> ServerT api m
 
   route Proxy config subserver = WithRequest $ \ request ->
     route (Proxy :: Proxy api) config (subserver `addAuthCheck` authCheck request)

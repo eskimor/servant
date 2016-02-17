@@ -58,7 +58,7 @@ import           Test.Hspec.Wai             (get, liftIO, matchHeaders,
                                              with, (<:>))
 
 import           Servant.Server.Internal.Auth
-                                            (AuthHandler, AuthServerType,
+                                            (AuthHandler, AuthServerData,
                                              mkAuthHandler)
 import           Servant.Server.Internal.RoutingApplication
                                             (toApplication, RouteResult(..))
@@ -545,7 +545,7 @@ authApi = Proxy
 authServer :: Server GenAuthAPI
 authServer = const (return tweety)
 
-type instance AuthServerType (AuthProtect "auth") = ()
+type instance AuthServerData (AuthProtect "auth") = ()
 
 genAuthConfig :: Config '[ AuthHandler Request () ]
 genAuthConfig =

@@ -16,7 +16,7 @@ import           Servant.Server.Internal.ServantErr (ServantErr)
 
 -- | Specify the type of data returned after we've authenticated a request.
 -- quite often this is some `User` datatype.
-type family AuthServerType a :: *
+type family AuthServerData a :: *
 
 -- | Handlers for AuthProtected resources
 newtype AuthHandler r usr = AuthHandler
