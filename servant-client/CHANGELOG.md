@@ -8,6 +8,8 @@ HEAD
 * Use `http-api-data` instead of `Servant.Common.Text`
 * Client functions now consider any 2xx succesful.
 * Remove matrix params.
+* Add generalized authentication support via the `AuthClientData` type family and
+  `AuthenticateReq` data type
 
 0.4.1
 -----

@@ -11,6 +11,7 @@ HEAD
 * Remove `RouteMismatch`.
 * Redefined constructors of `RouteResult`.
 * Added `Delayed` and related functions (`addMethodCheck`, `addAcceptCheck`, `addBodyCheck`, `runDelayed`)
+* Add generalized authentication support via the `AuthServerData` type family and `AuthHandler` handler
 
 0.4.1
 -----
