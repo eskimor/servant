@@ -43,7 +43,7 @@ library
                        Servant.JS.Vanilla
   build-depends:       base            >= 4.5 && <5
                      , charset         >= 0.3
-                     , lens            >= 4
+                     , lens            >= 4.13
                      , servant-foreign == 0.5.*
                      , text            >= 1.2  && < 1.3
 

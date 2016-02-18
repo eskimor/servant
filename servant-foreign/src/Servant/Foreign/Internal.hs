@@ -7,7 +7,7 @@
 -- arbitrary programming languages.
 module Servant.Foreign.Internal where
 
-import           Control.Lens hiding (cons)
+import           Control.Lens hiding (cons, List)
 import           Data.Proxy
 import           Data.String
 import           Data.Text
