@@ -1220,6 +1220,112 @@ $ curl http://localhost:8081/b
 "hi"
 ```
 
+## Handling Basic Authentication
+
+Until now, all of servant's API combinators extracted information from a request or dictated the structure of a response (e.g. a `Capture` param is pulled from the request path). Now consider an API resource protected by basic authentication. Once the required `WWW-Authenticate` header is checked, we need to verify the username and password. But how? One solution would be to force an API author to provide a function of type `BasicAuthData -> ExceptT ServantErr IO User` and servant should use this function. Unfortunately this didn't work prior to `0.5` because all of servant's machinery was engineered around the idea that each combinator can extract information from a request or dictate the structure of a response. We cannot extract the function `BasicAuthData -> ExceptT ServantErr IO User` from a request! Are we doomed?
+
+Servant `0.5` introduced `Config` to handle this. The type machinery is beyond the scope of this tutorial, but the idea is simple: provide some data to the `serve` function, and that data is propagated to the functions that handle each combinator. Using `Config`, we can supply a function of type `BasicAuthData -> ExceptT ServantErr IO User` to the `BasicAuth` combinator handler. This will allow the handler to check authentication and return a `User` to downstream handlers if successful.
+
+In practice we wrap `BasicAuthData -> ExceptT ServantErr IO` into a slightly different function to better capture the semantics of basic authentication:
+
+``` haskell ignore
+-- | The result of authentication/authorization
+data BasicAuthResult usr
+  = Unauthorized
+  | BadPassword
+  | NoSuchUser
+  | Authorized usr
+  deriving (Eq, Show, Read, Generic, Typeable, Functor)
+
+-- | Datatype wrapping a function used to check authentication.
+newtype BasicAuthCheck usr = BasicAuthCheck
+  { unBasicAuthCheck :: BasicAuthData
+                     -> IO (BasicAuthResult usr)
+  }
+  deriving (Generic, Typeable, Functor)
+```
+
+Now, to use this within an API we demonstrate a complete example below. You will see the usage of `BasicAuthCheck` and `Config` in the `serverConfig` definition below!
+
+``` haskell
+-- | private data that needs protection
+newtype PrivateData = PrivateData { ssshhh :: Text }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON PrivateData
+
+-- | public data that anyone can use.
+newtype PublicData = PublicData { somedata :: Text }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON PublicData
+
+-- | A user we'll grab from the database when we authenticate someone
+newtype User = User { userName :: Text }
+  deriving (Eq, Show)
+
+-- | a type to wrap our public api
+type PublicAPI = Get '[JSON] [PublicData]
+
+-- | a type to wrap our private api
+type PrivateAPI = Get '[JSON] PrivateData
+
+-- | our API
+type API = "public"  :> PublicAPI
+      :<|> "private" :> BasicAuth "foo-realm" User :> PrivateAPI
+
+-- | a value holding a proxy of our API type
+api :: Proxy API
+api = Proxy
+
+-- | 'BasicAuthCheck' holds the handler we'll use to verify a username and password.
+authCheck :: BasicAuthCheck User
+authCheck =
+  let check (BasicAuthData username password) =
+        if username == "servant" && password == "server"
+        then return (Authorized (User "servant"))
+        else return Unauthorized
+  in BasicAuthCheck check
+
+-- | We need to supply our handlers with the right configuration. In this case,
+-- Basic Authentication requires a Config Entry with the 'BasicAuthCheck' value
+-- tagged with "foo-tag" This config is then supplied to 'server' and threaded 
+-- to the BasicAuth HasServer handlers.
+serverConfig :: Config (BasicAuthCheck User ': '[])
+serverConfig = authCheck :. EmptyConfig
+
+-- | an implementation of our server. Here is where we pass all the handlers to our endpoints.
+-- In particular, for the BasicAuth protected handler, we need to supply a function
+-- that takes 'User' as an argument.
+server :: Server API
+server =
+  let publicAPIHandler = return [PublicData "foo", PublicData "bar"]
+      privateAPIHandler (user :: User) = return (PrivateData (userName user))
+  in publicAPIHandler :<|> privateAPIHandler
+
+-- | hello, server!
+main :: IO ()
+main = run 8080 (serve api serverConfig server)
+
+{- Sample session
+$ curl -XGET localhost:8080/public
+[{"somedata":"foo"},{"somedata":"bar"}
+$ curl -iXGET localhost:8080/private
+HTTP/1.1 401 Unauthorized
+transfer-encoding: chunked
+Date: Thu, 07 Jan 2016 22:36:38 GMT
+Server: Warp/3.1.8
+WWW-Authenticate: Basic realm="foo-realm"
+$ curl -iXGET localhost:8080/private -H "Authorization: Basic c2VydmFudDpzZXJ2ZXI="
+HTTP/1.1 200 OK
+transfer-encoding: chunked
+Date: Thu, 07 Jan 2016 22:37:58 GMT
+Server: Warp/3.1.8
+Content-Type: application/json
+{"ssshhh":"servant"}
+-}
+```
+
 ## Conclusion
 
 You're now equipped to write any kind of webservice/web-application using

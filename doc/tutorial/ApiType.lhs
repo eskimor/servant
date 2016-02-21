@@ -294,7 +294,7 @@ type UserAPI10 = "users" :> Get '[JSON] (Headers '[Header "User-Count" Integer] 
 
 ### Interoperability with other WAI `Application`s: `Raw`
 
-Finally, we also include a combinator named `Raw` that can be used for two reasons:
+We also include a combinator named `Raw` that can be used for two reasons:
 
 - You want to serve static files from a given directory. In that case you can just say:
 
@@ -313,6 +313,54 @@ type UserAPI11 = "users" :> Get '[JSON] [User]
 into your webservice. Static file serving is a specific example of that. The API type would look the
 same as above though. (You can even combine *servant* with other web frameworks
 this way!)
+
+### Basic Authentication
+
+Once you've established the basic routes and semantics of your API, it's time to consider protecting parts of it. Authentication and authorization are broad and nuanced topics; as servant began to explore this space we started small with one of HTTP's earliest authentication schemes: [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication).
+
+When protecting endpoints with basic authentication, we need to specify two items:
+
+1. The **realm** of authentication as per the Basic Authentictaion spec.
+2. The datatype returned by the server after authentication is verified. This is usually a `User` or `Customer` type datatype.
+
+With those two items in mind, *servant* provides the following combinator:
+
+``` haskell ignore
+data BasicAuth (realm :: Symbol) (userData :: *)
+```
+
+You can use this combinator to protect an API as follows:
+
+``` haskell
+-- | Simple data type for our weather api
+data WeatherData =
+  WeatherData { temp :: Double
+              , wind :: Int
+              } deriving (Eq, FromJSON, Generic, Ord, ToJSON)
+
+-- | The user data returned after basic authentication
+data User =
+  User { username :: String
+       , city     :: String
+       , state    :: String
+       , country  :: String
+       } deriving (Eq, FromJSON, Generic, Ord, ToJSON)
+
+-- | parts of the API open to the public (no authentication required)
+type PublicAPI12  = "public"  :> "weather" :> Get '[JSON] WeatherData
+
+-- | parts of the API protected by basic authentication
+type PrivatePAI12 = "private" :> "weather"
+                              :> Capture "city" String
+                              :> ReqBody '[JSON] WeatherData
+                              :> Post '[JSON] ()
+               :<|> "private" :> "account"
+                              :> Get '[PlainText] String
+
+-- | Our full Weather API, private API protected by basic authentication.
+type ProtectedAPI12 = PublicAPI12
+                 :<|> BasicAuth "weather" User :> PrivateAPI12
+
 
 <div style="text-align: center;">
   <a href="/tutorial/server.html">Next page: Serving an API</a>

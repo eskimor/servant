@@ -147,3 +147,7 @@ You can now run `dist/build/tutorial/tutorial 8` (the server) and
 ```
 
 The types of the arguments for the functions are the same as for (server-side) request handlers. You now know how to use *servant-client*!
+
+## Basic Authentication
+
+As of `0.5`, *servant-client* comes with support for basic authentication! Endpoints protected by Basic Authentication will require a value of type `BasicAuthData` to complete the request.
