@@ -158,6 +158,9 @@ performXhr :: JS.XMLHttpRequest -> BaseUrl -> Request -> (JS.XMLHttpRequest -> D
 performXhr xhr burl request fixUp = do
     liftIO $ putStrLn $ "Base URL (performXhr): " <> show burl
     liftIO $ putStrLn $ "Full url (performXhr): " <> T.unpack (toUrl burl request)
+    liftIO $ putStrLn $ "Path alone (performXhr): " <> T.unpack (decodeUtf8Lenient $ L.toStrict $ toLazyByteString $ requestPath request)
+    liftIO $ putStrLn $ "Path alone (unprocessed) (performXhr): " <> show (toLazyByteString $ requestPath request)
+
     let username, password :: Maybe Text
         username = Nothing; password = Nothing
 
