@@ -15,6 +15,7 @@
 module Servant.Client.Internal.JSaddleXhrClient where
 
 import           Control.Arrow
+import           Data.Text (Text)
 import           System.IO (stderr, hPutStrLn)
 import           Control.Concurrent
 import           Control.Monad
@@ -123,7 +124,7 @@ getDefaultBaseUrl = do
     hostname     <- Location.getHostname curLoc
 
     let protocol
-          | (protocolStr :: JS.JSString) == "https:"
+          | (protocolStr :: Text) == "https:"
                         = Https
           | otherwise   = Http
 
@@ -155,7 +156,7 @@ performRequest domc req = do
 performXhr :: JS.XMLHttpRequest -> BaseUrl -> Request -> (JS.XMLHttpRequest -> DOM ()) -> DOM ()
 performXhr xhr burl request fixUp = do
 
-    let username, password :: Maybe JS.JSString
+    let username, password :: Maybe Text
         username = Nothing; password = Nothing
 
     JS.open xhr (decodeUtf8Lenient $ requestMethod request) (toUrl burl request) True username password
@@ -189,29 +190,29 @@ performXhr xhr burl request fixUp = do
       void $ liftIO $ tryPutMVar waiter ()
 
 
-toUrl :: BaseUrl -> Request -> JS.JSString
+toUrl :: BaseUrl -> Request -> Text
 toUrl burl request =
-  let pathS = JS.toJSString $ decodeUtf8Lenient $ L.toStrict $ toLazyByteString $
+  let pathS = decodeUtf8Lenient $ L.toStrict $ toLazyByteString $
               requestPath request
       queryS =
-          JS.toJSString $ decodeUtf8Lenient $
+          decodeUtf8Lenient $
           renderQuery True $
           toList $
           requestQueryString request
-  in JS.toJSString (showBaseUrl burl) <> pathS <> queryS :: JS.JSString
+  in T.pack (showBaseUrl burl) <> pathS <> queryS
 
 setHeaders :: JS.XMLHttpRequest -> Request -> DOM ()
 setHeaders xhr request = do
   forM_ (toList $ requestAccept request) $ \mediaType -> -- FIXME review
     JS.setRequestHeader
       xhr
-      ("Accept" :: JS.JSString)
+      ("Accept" :: Text)
       (decodeUtf8Lenient $ renderHeader mediaType)
 
   forM_ (requestBody request) $ \(_, mediaType) ->
     JS.setRequestHeader
       xhr
-      ("Content-Type" :: JS.JSString)
+      ("Content-Type" :: Text)
       (decodeUtf8Lenient $ renderHeader mediaType)
 
   forM_ (toList $ requestHeaders request) $ \(key, value) ->
@@ -282,5 +283,5 @@ parseHeaders s =
     strip :: BS.ByteString -> BS.ByteString
     strip = BS.dropWhile isSpace . BS.reverse . BS.dropWhile isSpace . BS.reverse
 
-decodeUtf8Lenient :: BS.ByteString -> JS.JSString
-decodeUtf8Lenient = JS.toJSString . T.decodeUtf8With T.lenientDecode
+decodeUtf8Lenient :: BS.ByteString -> Text
+decodeUtf8Lenient = T.decodeUtf8With T.lenientDecode
