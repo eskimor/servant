@@ -39,6 +39,7 @@ import           Data.Proxy
                  (Proxy (..))
 import qualified Data.Sequence                     as Seq
 import           Data.String.Conversions
+import qualified Data.Text as T
 import qualified Data.Text.Encoding                as T
 import qualified Data.Text.Encoding.Error          as T
 import           GHC.Generics
@@ -155,7 +156,8 @@ performRequest domc req = do
 -- Performs the xhr and blocks until the response was received
 performXhr :: JS.XMLHttpRequest -> BaseUrl -> Request -> (JS.XMLHttpRequest -> DOM ()) -> DOM ()
 performXhr xhr burl request fixUp = do
-
+    liftIO $ putStrLn $ "Base URL (performXhr): " <> show burl
+    liftIO $ putStrLn $ "Full url (performXhr): " <> T.unpack (toUrl burl request)
     let username, password :: Maybe Text
         username = Nothing; password = Nothing
 
