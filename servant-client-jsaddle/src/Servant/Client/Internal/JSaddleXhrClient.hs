@@ -204,7 +204,7 @@ toUrl burl request =
           renderQuery True $
           toList $
           requestQueryString request
-  in T.pack (showBaseUrl burl) <> pathS <> queryS
+  in T.pack $ showBaseUrl burl <> T.unpack pathS <> T.unpack queryS
 
 setHeaders :: JS.XMLHttpRequest -> Request -> DOM ()
 setHeaders xhr request = do
